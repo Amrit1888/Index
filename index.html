@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For You, Swadha</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&display=swap');
+
+        :root {
+            --bg-color: #120512;
+            --accent-color: #ffd700;
+            --heart-red: #ff4d6d;
+            --text-color: #2c1810;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            cursor: crosshair;
+        }
+
+        /* Heart Background for Diary */
+        #heart-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            display: none;
+            pointer-events: none;
+        }
+
+        .floating-heart {
+            position: absolute;
+            color: var(--heart-red);
+            opacity: 0.5;
+            font-size: 20px;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+            50% { opacity: 0.7; }
+            100% { transform: translateY(-20vh) scale(1.2); opacity: 0; }
+        }
+
+        /* Overlay Screens */
+        .overlay-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            background: var(--bg-color);
+            transition: all 1s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .welcome-text {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2.5rem, 10vw, 5.5rem);
+            color: white;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #fff, 0 0 20px var(--accent-color); }
+            to { text-shadow: 0 0 20px #fff, 0 0 40px #ff00ff; }
+        }
+
+        /* Pulsing Emoji Animation */
+        .emoji-pulse {
+            font-size: clamp(60px, 15vw, 100px);
+            display: block;
+            animation: heartBeat 1.2s infinite;
+            filter: drop-shadow(0 0 20px var(--heart-red));
+        }
+
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.25); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+        }
+
+        /* UI Elements */
+        .dialog-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: min(400px, 90vw);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--accent-color);
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #4b0082, #2e004f);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            cursor: pointer;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: 0.4s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--accent-color); }
+
+        /* Diary Scene - Responsive Fix */
+        .scene {
+            width: min(350px, 85vw);
+            height: min(500px, 70vh);
+            perspective: 1500px;
+            display: none;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        .book { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 1s; }
+
+        .page {
+            position: absolute;
+            width: 100%; height: 100%;
+            transform-origin: left;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .front, .back {
+            position: absolute;
+            width: 100%; height: 100%;
+            padding: clamp(15px, 4vw, 30px);
+            backface-visibility: hidden;
+            border-radius: 5px 15px 15px 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #fff9e6;
+            color: var(--text-color);
+            box-shadow: inset 3px 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .back { transform: rotateY(180deg); }
+        .page.flipped { transform: rotateY(-180deg); }
+        
+        .page.cover .front {
+            background: linear-gradient(135deg, #4b0082, #2e004f);
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+        }
+
+        .diary-text { font-family: 'Dancing Script', cursive; font-size: clamp(1.2rem, 5vw, 1.8rem); line-height: 1.3; }
+
+        .blink-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #2e004f;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            border-radius: 10px;
+            animation: buttonBlink 0.8s infinite alternate;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        @keyframes buttonBlink {
+            from { box-shadow: 0 0 5px var(--accent-color); }
+            to { box-shadow: 0 0 15px var(--accent-color); }
+        }
+
+        #thank-you-screen {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .thank-you-text { font-size: clamp(1.5rem, 8vw, 3rem); color: white; z-index: 10; }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            bottom: -10vh;
+            animation: moveStarUp linear infinite;
+        }
+
+        @keyframes moveStarUp {
+            from { transform: translateY(0); }
+            to { transform: translateY(-120vh); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="heart-bg"></div>
+
+<div id="welcome-screen" class="overlay-screen">
+    <h1 class="welcome-text">Welcome</h1>
+    <button class="btn" onclick="goToStep('welcome-screen', 'name-dialog')">Get in!</button>
+</div>
+
+<div id="name-dialog" class="overlay-screen" style="display:none;">
+    <div class="dialog-box">
+        <p style="color: #ddd; font-style: italic;">Enter the name of the most beautiful soul in the world?</p>
+        <input type="text" id="nameInput" placeholder="Enter Name" autocomplete="off">
+        <button class="btn" onclick="verifyName()">Verify</button>
+    </div>
+</div>
+
+<div id="emoji-screen" class="overlay-screen" style="display:none;">
+    <span class="emoji-pulse">😍</span>
+    <p class="diary-text" style="color: var(--accent-color); margin: 30px 20px;">
+        U know when I see u nah then what happen to me i also don't know jst bcz u're<br>
+        So impressive.<br>
+        What is the factor behind this??<br>
+        There is something for you...<br>
+        ⬇️
+    </p>
+    <button class="btn" onclick="goToStep('emoji-screen', 'diary-scene')">Click here to see "PAGE:2"</button>
+</div>
+
+<div class="scene" id="diary-scene">
+    <div class="book" id="book">
+        
+        <div class="page cover" id="p1" style="z-index: 3;">
+            <div class="front" onclick="nextPage()">
+                <h1 style="font-family: 'Great Vibes'; font-size: clamp(1.8rem, 6vw, 2.5rem);">Only Swadhuu thingss..</h1>
+                <p style="margin-top:10px; font-size: 0.7rem;">(Click to turn Pages)</p>
+            </div>
+            <div class="back" onclick="nextPage()">
+                <h2 class="diary-text" style="font-size: 1.8rem;">Assalamualaikum Payarii...,</h2>
+                <p class="diary-text" style="font-size: 1rem; margin-top: 10px;">
+                    Hello Dear "Swadhaa".. <br> This corner of the internet is created just to tell you how special u're for me onlyy.
+                </p>
+            </div>
+        </div>
+
+        <div class="page" id="p2" style="z-index: 2;">
+            <div class="front" onclick="nextPage()">
+                <h2 class="diary-text">Ek baat hai apke liye psnd aaye toh batana..</h2>
+                <p class="diary-text" style="font-size: 1rem; margin-top: 10px;">
+                    Apki shaksiyat mein wo baat hai jo kisi kitaab mein nahi milti. Bas ek baar aapka deedar ho jaye, toh poora din ek haseen khwaab jaisa lagta hai.
+                </p>
+            </div>
+            <div class="back" onclick="nextPage()">
+                <h2 class="diary-text">PAGE:2 "(The main one)"</h2>
+                <p class="diary-text" style="font-size: 1rem; margin-top: 10px;">
+                    Aap mein kuch toh baat hai jo main khud ko aapse door nahi krr paata chahe kitni bhi khosih kr loon.<br>
+                    Apke jabab ka intezaar rhegaa..
+                </p>
+            </div>
+        </div>
+
+        <div class="page" id="p3" style="z-index: 1;">
+            <div class="front" onclick="nextPage()">
+                <h2 class="diary-text">Just One More Thing</h2>
+                <p class="diary-text" style="font-size: 1rem; margin-top: 10px;">
+                    Thank you for being exactly who you are. Don't ever change.
+                </p>
+            </div>
+            <div class="back">
+                <h2 class="diary-text" style="font-size: 1.1rem;">Hope after seeing this u give me some special space in u're heart..<br><br>Reply as soon as possible</h2>
+                <button class="blink-btn" onclick="finalFade()">Jst a last step</button>
+            </div>              
+        </div>
+    </div>
+</div>
+
+<div id="thank-you-screen" class="overlay-screen" style="display:none;">
+    <h1 class="welcome-text" style="font-size: clamp(1.8rem, 6vw, 3rem); line-height: 1.2;">U're jst very similar jst like the stars u see here.<br>Thankuuuu...</h1>
+</div>
+
+<script>
+    let currentLoc = 1;
+    const numOfPapers = 3;
+
+    function goToStep(current, next) {
+        const curr = document.getElementById(current);
+        curr.style.opacity = '0';
+        curr.style.transform = 'scale(0.9)';
+        
+        setTimeout(() => {
+            curr.style.display = 'none';
+            const nextEl = document.getElementById(next);
+            nextEl.style.display = 'flex';
+            
+            if(next === 'diary-scene') {
+                document.getElementById('heart-bg').style.display = 'block';
+                createHearts();
+                setTimeout(() => nextEl.style.opacity = '1', 100);
+            }
+        }, 1000);
+    }
+
+    function verifyName() {
+        const val = document.getElementById('nameInput').value.trim().toLowerCase();
+        if(val === "swadha" || val === "swadhaa") {
+            goToStep('name-dialog', 'emoji-screen');
+        } else {
+            alert("Enter The correct name");
+        }
+    }
+
+    function createHearts() {
+        const container = document.getElementById('heart-bg');
+        setInterval(() => {
+            const h = document.createElement('div');
+            h.innerHTML = '❤️';
+            h.className = 'floating-heart';
+            h.style.left = Math.random() * 100 + 'vw';
+            h.style.animationDuration = (Math.random() * 3 + 4) + 's';
+            h.style.fontSize = (Math.random() * 20 + 10) + 'px';
+            container.appendChild(h);
+            setTimeout(() => h.remove(), 7000);
+        }, 400);
+    }
+
+    function nextPage() {
+        if(currentLoc <= numOfPapers) {
+            const paper = document.getElementById(`p${currentLoc}`);
+            paper.classList.add("flipped");
+            paper.style.zIndex = currentLoc;
+            
+            // Adjust movement for mobile vs desktop
+            const moveX = window.innerWidth < 600 ? "25%" : "50%";
+            if(currentLoc === 1) document.getElementById('book').style.transform = `translateX(${moveX})`;
+            
+            currentLoc++;
+        }
+    }
+
+    function finalFade() {
+        document.getElementById('heart-bg').style.opacity = '0';
+        document.getElementById('diary-scene').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('diary-scene').style.display = 'none';
+            const ty = document.getElementById('thank-you-screen');
+            ty.style.display = 'flex';
+            ty.style.opacity = '1';
+            createStars();
+        }, 2000);
+    }
+
+    function createStars() {
+        const ty = document.getElementById('thank-you-screen');
+        for(let i = 0; i < 80; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            let size = Math.random() * 3 + 1 + 'px';
+            s.style.width = size; s.style.height = size;
+            s.style.left = Math.random() * 100 + 'vw';
+            s.style.animationDuration = Math.random() * 3 + 3 + 's';
+            s.style.animationDelay = Math.random() * 5 + 's';
+            ty.appendChild(s);
+        }
+    }
+</script>
+</body>
+</html>
